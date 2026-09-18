@@ -90,7 +90,7 @@ class VectorStore:
     def search(
         self,
         query_embedding: list[float],
-        top_k: int = 5,
+        top_k: int = 3,
     ) -> dict:
         """
         Search the vector store using a query embedding.

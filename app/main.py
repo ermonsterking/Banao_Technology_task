@@ -1,4 +1,5 @@
 import tempfile
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -11,6 +12,12 @@ from app.schemas import (
     QueryResponse,
     UploadResponse,
 )
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 
 SUPPORTED_EXTENSIONS = {".pdf", ".txt"}
@@ -78,16 +85,25 @@ async def upload_document(
         return UploadResponse(**result)
 
     except (ValueError, OSError) as exc:
+        logger.warning(
+            "Document ingestion rejected: filename=%s error=%s",
+            file.filename,
+            exc,
+        )
         raise HTTPException(
             status_code=400,
             detail=str(exc),
         ) from exc
 
-    except Exception as exc:
+    except Exception:
+        logger.exception(
+            "Unexpected document ingestion failure: filename=%s",
+            file.filename,
+        )
         raise HTTPException(
             status_code=500,
-            detail=f"Document ingestion failed: {exc}",
-        ) from exc
+            detail="Document ingestion failed.",
+        )
 
 
 @app.post(
@@ -104,19 +120,25 @@ def query_documents(
         return QueryResponse(**result)
 
     except LLMError as exc:
+        logger.error("LLM generation failed: %s", exc)
         raise HTTPException(
             status_code=502,
-            detail=str(exc),
+            detail="LLM generation failed.",
         ) from exc
 
     except ValueError as exc:
+        logger.warning(
+            "Invalid query request: error=%s",
+            exc,
+        )
         raise HTTPException(
             status_code=400,
             detail=str(exc),
         ) from exc
 
-    except Exception as exc:
+    except Exception:
+        logger.exception("Unexpected query failure.")
         raise HTTPException(
             status_code=500,
-            detail=f"Query failed: {exc}",
-        ) from exc
+            detail="Query failed.",
+        )

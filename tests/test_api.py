@@ -141,6 +141,31 @@ def test_query_documents():
     assert data["sources"][0]["page"] == 1
     assert data["latency_ms"] == 42.5
 
+def test_query_documents_not_found_returns_empty_sources():
+    fake_result = {
+        "answer": "NOT_FOUND",
+        "sources": [],
+        "latency_ms": 35.2,
+    }
+
+    with patch(
+        "app.main.pipeline.query",
+        return_value=fake_result,
+    ):
+        response = client.post(
+            "/query",
+            json={
+                "question": "Who was the CEO of the company?"
+            },
+        )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["answer"] == "NOT_FOUND"
+    assert data["sources"] == []
+    assert data["latency_ms"] == 35.2
 
 def test_query_question_too_short():
     response = client.post(
