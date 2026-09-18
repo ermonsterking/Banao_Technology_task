@@ -1,0 +1,37 @@
+[
+  {
+    "question": "What was the validation F1 score?",
+    "answerable": true,
+    "expected_text": "validation F1 score of 0.8772"
+  },
+  {
+    "question": "What preprocessing tools were used?",
+    "answerable": true,
+    "expected_text": "Rasterio and Albumentations"
+  },
+  {
+    "question": "What loss function was used?",
+    "answerable": true,
+    "expected_text": "hybrid Dice-Focal loss"
+  },
+  {
+    "question": "What is the class imbalance?",
+    "answerable": true,
+    "expected_text": "1:7.2"
+  },
+  {
+    "question": "What architecture was proposed?",
+    "answerable": true,
+    "expected_text": "Dual-stream CrossModalChangeNet"
+  },
+  {
+    "question": "Where was the model deployed?",
+    "answerable": true,
+    "expected_text": "research environment"
+  },
+  {
+    "question": "Who was the CEO of the company?",
+    "answerable": false,
+    "expected_text": null
+  }
+]  
