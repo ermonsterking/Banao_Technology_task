@@ -30,7 +30,9 @@ class VectorStore:
         self.collection = self.client.get_or_create_collection(
             name=COLLECTION_NAME,
             metadata={
-                "description": "Document chunks for RAG question answering"
+                "description": (
+                    "Document chunks for RAG question answering"
+                )
             },
         )
 
@@ -42,9 +44,7 @@ class VectorStore:
         filename: str,
         file_type: str,
     ) -> int:
-        """
-        Store document chunks, embeddings, and metadata.
-        """
+        """Store document chunks, embeddings, and metadata."""
 
         if len(chunks) != len(embeddings):
             raise ValueError(
@@ -61,8 +61,6 @@ class VectorStore:
         for chunk in chunks:
             chunk_id = chunk["chunk_id"]
 
-            # Prefix the document ID to prevent collisions
-            # between different uploaded documents.
             vector_id = f"{document_id}:{chunk_id}"
 
             ids.append(vector_id)
@@ -75,8 +73,6 @@ class VectorStore:
                 "chunk_index": chunk["chunk_index"],
             }
 
-            # Chroma metadata does not handle None reliably,
-            # so only include page when it exists.
             if chunk.get("page") is not None:
                 metadata["page"] = chunk["page"]
 
@@ -91,8 +87,41 @@ class VectorStore:
 
         return len(chunks)
 
+    def search(
+        self,
+        query_embedding: list[float],
+        top_k: int = 5,
+    ) -> dict:
+        """
+        Search the vector store using a query embedding.
+
+        Chroma returns distance values for the configured collection.
+        Lower distance means a closer vector match.
+        """
+
+        if not query_embedding:
+            raise ValueError(
+                "Query embedding cannot be empty."
+            )
+
+        if top_k <= 0:
+            raise ValueError(
+                "top_k must be greater than 0."
+            )
+
+        return self.collection.query(
+            query_embeddings=[query_embedding],
+            n_results=top_k,
+            include=[
+                "documents",
+                "metadatas",
+                "distances",
+            ],
+        )
+
     def count(self) -> int:
         """Return the total number of stored chunks."""
+
         return self.collection.count()
 
     def get_document_chunks(

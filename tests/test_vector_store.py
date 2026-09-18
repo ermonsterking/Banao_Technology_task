@@ -170,3 +170,43 @@ def test_delete_document(vector_store):
     vector_store.delete_document("doc-delete")
 
     assert vector_store.count() == 0
+
+def test_search(vector_store):
+    chunks = [
+        {
+            "chunk_id": "chunk-0",
+            "text": "Machine learning information.",
+            "page": 1,
+            "chunk_index": 0,
+        },
+        {
+            "chunk_id": "chunk-1",
+            "text": "Database information.",
+            "page": 2,
+            "chunk_index": 1,
+        },
+    ]
+
+    embeddings = [
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+    ]
+
+    vector_store.add_chunks(
+        chunks=chunks,
+        embeddings=embeddings,
+        document_id="search-doc",
+        filename="search.txt",
+        file_type="txt",
+    )
+
+    result = vector_store.search(
+        query_embedding=[1.0, 0.0, 0.0],
+        top_k=2,
+    )
+
+    assert len(result["ids"][0]) == 2
+    assert result["ids"][0][0] == "search-doc:chunk-0"
+    assert result["documents"][0][0] == (
+        "Machine learning information."
+    )
