@@ -14,27 +14,16 @@ def load_questions() -> list[dict]:
 
 def evaluate_retrieval(
     questions: list[dict],
-    top_k: int = 3,
+    top_k: int,
 ) -> dict:
-
     retriever = Retriever()
 
-    answerable_questions = [
-        item for item in questions
-        if item["answerable"]
-    ]
-
-    unanswerable_questions = [
-        item for item in questions
-        if not item["answerable"]
-    ]
-
-    retrieval_hits = 0
     results = []
 
     for item in questions:
         question = item["question"]
-        expected_text = item.get("expected_text")
+        answerable = item["answerable"]
+        expected_text = item["expected_text"]
 
         retrieved = retriever.retrieve(
             question,
@@ -47,42 +36,46 @@ def evaluate_retrieval(
             for chunk in retrieved
         )
 
-        if expected_text is not None:
-            hit = expected_text.lower() in retrieved_text
-        else:
-            hit = False
+        hit = (
+            answerable
+            and expected_text.lower() in retrieved_text
+        )
 
-        if item["answerable"] and hit:
-            retrieval_hits += 1
+        distances = [
+            round(chunk["distance"], 4)
+            for chunk in retrieved
+        ]
 
         results.append(
             {
                 "question": question,
-                "answerable": item["answerable"],
-                "expected_text": expected_text,
+                "answerable": answerable,
                 "hit": hit,
-                "retrieved_count": len(retrieved),
-                "distances": [
-                    round(chunk["distance"], 4)
-                    for chunk in retrieved
-                ],
+                "distances": distances,
             }
         )
 
-    total_answerable = len(answerable_questions)
+    answerable_questions = [
+        result for result in results
+        if result["answerable"]
+    ]
 
-    retrieval_hit_rate = (
-        retrieval_hits / total_answerable
-        if total_answerable > 0
-        else 0.0
+    retrieval_hits = sum(
+        result["hit"]
+        for result in answerable_questions
     )
+
+    total_answerable = len(answerable_questions)
 
     return {
         "top_k": top_k,
-        "retrieval_hits": retrieval_hits,
-        "answerable_total": total_answerable,
-        "retrieval_hit_rate": retrieval_hit_rate,
-        "unanswerable_total": len(unanswerable_questions),
+        "hits": retrieval_hits,
+        "total_answerable": total_answerable,
+        "hit_rate": (
+            retrieval_hits / total_answerable
+            if total_answerable
+            else 0.0
+        ),
         "results": results,
     }
 
@@ -90,43 +83,47 @@ def evaluate_retrieval(
 if __name__ == "__main__":
     questions = load_questions()
 
-    evaluation = evaluate_retrieval(
-        questions,
-        top_k=3,
-    )
-
     print("\nRetrieval Evaluation")
-    print("=" * 60)
+    print("=" * 70)
 
-    print(
-        f"Retrieval Hit Rate @ {evaluation['top_k']}: "
-        f"{evaluation['retrieval_hit_rate']:.2%}"
-    )
-
-    print(
-        f"Answerable retrieval hits: "
-        f"{evaluation['retrieval_hits']}/"
-        f"{evaluation['answerable_total']}"
-    )
-
-    print(
-        f"Unanswerable questions: "
-        f"{evaluation['unanswerable_total']}"
-    )
-
-    print("\nIndividual Results")
-    print("-" * 60)
-
-    for result in evaluation["results"]:
-        print(
-            f"\nQuestion: {result['question']}"
+    for top_k in [1, 3, 4]:
+        evaluation = evaluate_retrieval(
+            questions,
+            top_k=top_k,
         )
+
         print(
-            f"Answerable: {result['answerable']}"
+            f"\nHit Rate @ {top_k}: "
+            f"{evaluation['hit_rate']:.2%} "
+            f"({evaluation['hits']}/"
+            f"{evaluation['total_answerable']})"
         )
-        print(
-            f"Retrieval Hit: {result['hit']}"
-        )
-        print(
-            f"Distances: {result['distances']}"
-        )
+
+        for result in evaluation["results"]:
+            status = (
+                "PASS"
+                if result["hit"]
+                else "N/A"
+                if not result["answerable"]
+                else "FAIL"
+            )
+
+            distances = ", ".join(
+                str(distance)
+                for distance in result["distances"]
+            )
+
+            label = (
+                "answerable"
+                if result["answerable"]
+                else "unanswerable"
+            )
+
+            print(
+                f"{status} | {label} | "
+                f"{result['question']}"
+            )
+            print(
+                f"      distances: [{distances}]"
+            )
+

@@ -66,6 +66,7 @@ class RAGPipeline:
             "chunks_created": len(chunks),
         }
 
+
     def query(self, question: str) -> dict:
         start_time = time.perf_counter()
 
@@ -95,6 +96,19 @@ class RAGPipeline:
             context_prompt=prompt,
         )
 
+        # Do not expose retrieved chunks as sources when
+        # the LLM determines that the answer is not supported.
+        if answer.strip() == "NOT_FOUND":
+            latency_ms = (
+                time.perf_counter() - start_time
+            ) * 1000
+
+            return {
+                "answer": "NOT_FOUND",
+                "sources": [],
+                "latency_ms": round(latency_ms, 2),
+            }
+
         sources = []
 
         for chunk in retrieved_chunks:
@@ -121,3 +135,4 @@ class RAGPipeline:
             "sources": sources,
             "latency_ms": round(latency_ms, 2),
         }
+    

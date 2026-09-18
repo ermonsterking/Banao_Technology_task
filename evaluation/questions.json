@@ -33,5 +33,26 @@
     "question": "Who was the CEO of the company?",
     "answerable": false,
     "expected_text": null
+  },
+  {
+    "question": "What year was the project started?",
+    "answerable": false,
+    "expected_text": null
+  },
+  {
+    "question": "How much funding did the project receive?",
+    "answerable": false,
+    "expected_text": null
+  },
+  {
+    "question": "Which organization developed the model?",
+    "answerable": false,
+    "expected_text": null
+  },
+  {
+    "question": "What was the production deployment platform?",
+    "answerable": false,
+    "expected_text": null
   }
-]  
+]
+

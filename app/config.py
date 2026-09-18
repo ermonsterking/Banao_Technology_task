@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     chunk_size: int = 700
     chunk_overlap: int = 120
 
-    top_k: int = 5
+    top_k: int = 3
 
     relevance_threshold: float = 0.0
 
