@@ -11,11 +11,11 @@ def chunk_document(
 
     Strategy:
     1. Preserve page boundaries.
-    2. Split text into paragraphs.
-    3. Group paragraphs until the target size is reached.
-    4. Split oversized paragraphs into sentences.
-    5. Fall back to word-level splitting when necessary.
-    6. Apply overlap without exceeding chunk_size.
+    2. Detect section headings and keep them with following content.
+    3. Split remaining content into paragraphs.
+    4. Group semantic units until the target size is reached.
+    5. Split oversized units using sentences, then words.
+    6. Apply controlled overlap without exceeding chunk_size.
     """
 
     if chunk_size <= 0:
@@ -39,14 +39,14 @@ def chunk_document(
         if not page_text:
             continue
 
-        paragraphs = _split_paragraphs(page_text)
+        semantic_units = _split_into_semantic_units(page_text)
 
-        for paragraph in paragraphs:
-            if len(paragraph) <= chunk_size:
-                parts = [paragraph]
+        for unit in semantic_units:
+            if len(unit) <= chunk_size:
+                parts = [unit]
             else:
                 parts = _split_large_text(
-                    paragraph,
+                    unit,
                     chunk_size,
                 )
 
@@ -56,9 +56,10 @@ def chunk_document(
                 if not part:
                     continue
 
-                # If this is the first part on the page,
-                # simply create a chunk.
-                if not chunks or chunks[-1]["page"] != page_number:
+                if (
+                    not chunks
+                    or chunks[-1]["page"] != page_number
+                ):
                     chunks.append(
                         {
                             "chunk_id": f"chunk-{chunk_index}",
@@ -73,8 +74,8 @@ def chunk_document(
 
                 previous_text = chunks[-1]["text"]
 
-                # Try extending the previous chunk.
                 separator = "\n\n"
+
                 candidate = (
                     previous_text
                     + separator
@@ -85,22 +86,19 @@ def chunk_document(
                     chunks[-1]["text"] = candidate
                     continue
 
-                # Previous chunk is full enough.
-                # Create a new chunk with controlled overlap.
                 overlap_text = _get_overlap_text(
                     previous_text,
                     chunk_overlap,
                 )
 
-                if overlap_text:
-                    available = (
-                        chunk_size
-                        - len(overlap_text)
-                        - len(separator)
-                    )
+                available = (
+                    chunk_size
+                    - len(overlap_text)
+                    - len(separator)
+                )
 
-                    if available > 0:
-                        part = part[:available].rstrip()
+                if available > 0:
+                    part = part[:available].rstrip()
 
                 chunks.append(
                     {
@@ -120,10 +118,104 @@ def chunk_document(
     return chunks
 
 
+def _split_into_semantic_units(text: str) -> list[str]:
+    """
+    Split text into semantic units while keeping a likely section
+    heading attached to its following paragraph.
+
+    A heading is identified conservatively using:
+    - a short single line
+    - no sentence-ending punctuation
+    - title-like capitalization or common section-heading wording
+    """
+
+    paragraphs = _split_paragraphs(text)
+
+    units = []
+    index = 0
+
+    while index < len(paragraphs):
+        current = paragraphs[index]
+
+        if (
+            _is_section_heading(current)
+            and index + 1 < len(paragraphs)
+        ):
+            units.append(
+                f"{current}\n\n{paragraphs[index + 1]}"
+            )
+            index += 2
+        else:
+            units.append(current)
+            index += 1
+
+    return units
+
+
+def _is_section_heading(text: str) -> bool:
+    """Return True when text looks like a section heading."""
+
+    text = text.strip()
+
+    if not text:
+        return False
+
+    # Headings should generally be short.
+    if len(text) > 100:
+        return False
+
+    # A normal sentence is unlikely to be a heading.
+    if re.search(r"[.!?]$", text):
+        return False
+
+    words = text.split()
+
+    if len(words) > 12:
+        return False
+
+    # Common heading signals.
+    heading_keywords = {
+        "overview",
+        "architecture",
+        "training",
+        "preprocessing",
+        "evaluation",
+        "results",
+        "tools",
+        "deployment",
+        "limitation",
+        "methodology",
+        "introduction",
+        "conclusion",
+        "implementation",
+        "dataset",
+        "experiments",
+    }
+
+    lowered_words = {word.lower().strip(":") for word in words}
+
+    if lowered_words & heading_keywords:
+        return True
+
+    # Title-like heading: most words begin with uppercase.
+    title_like_words = [
+        word for word in words
+        if word[:1].isupper()
+    ]
+
+    return (
+        len(words) <= 8
+        and len(title_like_words) >= max(2, len(words) // 2)
+    )
+
+
 def _split_paragraphs(text: str) -> list[str]:
     """Split text while preserving paragraph boundaries."""
 
-    paragraphs = re.split(r"\n\s*\n+", text)
+    paragraphs = re.split(
+        r"\n\s*\n+",
+        text,
+    )
 
     return [
         paragraph.strip()
@@ -138,7 +230,7 @@ def _split_large_text(
 ) -> list[str]:
     """
     Split oversized text using:
-    sentences → words → character slices.
+    sentences → words.
     """
 
     sentences = _split_sentences(text)
@@ -183,7 +275,10 @@ def _split_large_text(
 
         return parts
 
-    return _split_by_words(text, chunk_size)
+    return _split_by_words(
+        text,
+        chunk_size,
+    )
 
 
 def _split_sentences(text: str) -> list[str]:
