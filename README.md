@@ -504,20 +504,28 @@ These are observations from a small local test and are environment-dependent. Th
 
 ---
 
-# Performance Observations
+# LLM Usage & Estimated Cost
 
-The application records request latency in milliseconds.
+For each query, the application records:
 
-During local testing, the first query was significantly slower because the embedding model needed to be initialized.
+* Prompt tokens
 
-Subsequent queries were faster because the embedding model was cached within the application process.
+* Completion tokens
 
-A small local test produced approximately:
+* Total tokens
 
-* First query: 8.4 seconds
+* Cached input tokens when available
 
-* Subsequent warm queries: approximately 0.7 seconds on average
-  These are observations from a small local test and are environment-dependent. They should not be interpreted as production performance benchmarks.
+* Estimated API cost in USD when pricing is configured for the selected model
+  These values are logged together with retrieved chunk count and query latency to provide basic inference-cost and performance observability.
+
+Example local log:
+
+Query completed: retrieved_chunks=3 latency_ms=1519.02
+
+prompt_tokens=589 completion_tokens=92 total_tokens=681
+
+cached_tokens=0 estimated_cost_usd=0.00014355
 
 # Logging
 
