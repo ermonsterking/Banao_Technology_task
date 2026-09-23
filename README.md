@@ -178,7 +178,7 @@ Retrieval quality was evaluated using six answerable questions.
 
 | Top-K | Answerable Questions | Hits | Hit Rate |
 | ----: | -------------------: | ---: | -------: |
-|     1 |                    6 |    3 |      50% |
+|     1 |                    6 |    4 |      66.67% |
 |     3 |                    6 |    6 |     100% |
 |     4 |                    6 |    6 |     100% |
 
@@ -431,7 +431,7 @@ For answerable questions, a retrieval hit is counted when the expected answer-be
 
 | Top-K | Answerable Questions | Hits | Hit Rate |
 | ----: | -------------------: | ---: | -------: |
-|     1 |                    6 |    4 |     66.4% |
+|     1 |                    6 |    4 |     66.67% |
 |     3 |                    6 |    6 |     100% |
 |     4 |                    6 |    6 |     100% |
 
@@ -503,6 +503,21 @@ A small local test produced approximately:
 These are observations from a small local test and are environment-dependent. They should not be interpreted as production performance benchmarks.
 
 ---
+
+# Performance Observations
+
+The application records request latency in milliseconds.
+
+During local testing, the first query was significantly slower because the embedding model needed to be initialized.
+
+Subsequent queries were faster because the embedding model was cached within the application process.
+
+A small local test produced approximately:
+
+* First query: 8.4 seconds
+
+* Subsequent warm queries: approximately 0.7 seconds on average
+  These are observations from a small local test and are environment-dependent. They should not be interpreted as production performance benchmarks.
 
 # Logging
 
@@ -617,7 +632,7 @@ The current suite contains 45 tests covering:
 Latest local result:
 
 ```text
-45 passed, 2 warnings
+46 passed, 2 warnings
 ```
 
 The warnings are dependency deprecation warnings and do not represent failed tests.
@@ -737,6 +752,9 @@ rag-question-answering/
 │
 ├── chroma_db/
 │   └── .gitkeep
+|
+├── docs/
+|   └── Avineesh_RAG_One_Page_Professional.pdf
 │
 ├── .env.example
 ├── .gitignore

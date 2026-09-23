@@ -6,6 +6,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 
 from app.llm import LLMError
 from app.rag_pipeline import RAGPipeline
+from app.parser import DocumentParseError
 from app.schemas import (
     HealthResponse,
     QueryRequest,
@@ -84,7 +85,7 @@ async def upload_document(
 
         return UploadResponse(**result)
 
-    except (ValueError, OSError) as exc:
+    except (ValueError, OSError, DocumentParseError) as exc:
         logger.warning(
             "Document ingestion rejected: filename=%s error=%s",
             file.filename,
@@ -92,7 +93,7 @@ async def upload_document(
         )
         raise HTTPException(
             status_code=400,
-            detail=str(exc),
+            detail="Document could not be processed.",
         ) from exc
 
     except Exception:

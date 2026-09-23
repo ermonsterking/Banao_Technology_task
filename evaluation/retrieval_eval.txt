@@ -1,0 +1,33 @@
+Binary Change Detection on EO-SAR Image Pairs
+
+Project Overview
+
+The project focuses on binary change detection using paired Earth Observation and Synthetic Aperture Radar imagery. The objective is to identify changed and unchanged pixels between image pairs.
+
+Model Architecture
+
+The proposed Dual-stream CrossModalChangeNet contains two streams based on Siamese encoders. Squeeze-and-Excitation blocks are used to improve feature representation and cross-modal information processing.
+
+Training and Loss Function
+
+The dataset contains a class imbalance of approximately 1:7.2. Changed pixels represent 12.13% of the dataset. A hybrid Dice-Focal loss was used to address the class imbalance during model training.
+
+Preprocessing Pipeline
+
+The preprocessing pipeline was implemented using Rasterio and Albumentations. Image pairs were processed before being passed to the model. Data augmentation was included to improve model generalization.
+
+Evaluation Results
+
+The model achieved a validation F1 score of 0.8772 and an IoU of 0.7810. The decision threshold was optimized to 0.44 based on validation performance.
+
+Development Tools
+
+The implementation used Python and deep learning tools for model development and evaluation. The project also involved experimentation with different preprocessing and training configurations.
+
+Deployment
+
+The model development and experiments were performed in a research environment. The available project information does not specify a production deployment platform.
+
+Project Limitation
+
+The available evaluation information focuses on validation performance. Additional testing on independent datasets would be useful for assessing how well the model generalizes beyond the validation data.

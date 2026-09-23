@@ -4,6 +4,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.parser import DocumentParseError
 
 
 client = TestClient(app)
@@ -100,6 +101,26 @@ def test_upload_empty_file():
     assert response.status_code == 400
     assert response.json()["detail"] == "Uploaded file is empty."
 
+def test_upload_unparseable_document_returns_400():
+    with patch(
+        "app.main.pipeline.ingest_document",
+        side_effect=DocumentParseError("Invalid PDF structure"),
+    ):
+        response = client.post(
+            "/documents/upload",
+            files={
+                "file": (
+                    "corrupt.pdf",
+                    BytesIO(b"not a valid pdf"),
+                    "application/pdf",
+                )
+            },
+        )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == (
+        "Document could not be processed."
+    )
 
 def test_query_documents():
     fake_result = {
